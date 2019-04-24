@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>lightbox</title>
+  <style type="text/css">
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+    }
+
+    body {
+      background: rgb(4, 250, 255);
+      background: linear-gradient(90deg, rgba(4, 250, 255, 1) 0%, rgba(229, 254, 50, 1) 49%, rgba(0, 212, 255, 1) 100%);
+    }
+
+    h1 {
+      text-align: center;
+      font-family: 'Roboto';
+      color: rgb(38, 177, 245);
+      padding: 0.5em auto;
+    }
+
+    p {
+      padding: 0.5em 3em 0.5em 3em;
+      font-family: 'Roboto';
+      font-size: 20px;
+    }
+
+    #slideshow {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
+    }
+
+    .overlay {
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.6);
+      /* fixed prevents the image and overlay from scrolling */
+      position: fixed;
+      left: 0;
+      top: 0;
+    }
+
+    .big {
+      /* translate center method */
+      /* works best when applied to opject itself */
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .pic {
+      padding: 0;
+    }
+
+    #lb,
+    #rb {
+      width: 32px;
+      height: 32px;
+      background-color: rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+    }
+
+    #lb {
+      /* float: left; */
+    }
+
+    #rb {
+      /* float: right; */
+    }
+
+    #controls {
+      z-index: 1000;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      /* use flex to spread out the buttons that are attached to this object */
+      /* this eliminates the need to use float */
+      display: flex;
+      justify-content: space-between;
+    }
+
+    #cap {
+      color: rgb(255, 255, 255);
+      background-color: rgba(0, 0, 0, 0.5);
+      font-size: 2em;
+      font-family: sans-serif;
+      position: absolute;
+      /* text-align: center; */
+      height: 2em;
+      /* use flex to align things both vertically and horizontally */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      /* border: 1px solid yellow; */
+    }
+  </style>
+  <!-- <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.js"></script> -->
+  <script type="text/javascript" src="jquery-3.1.1.js"></script>
+  </style>
+  <!-- <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.1.js"></script> -->
+  <script type="text/javascript" src="jquery-3.1.1.js"></script>
+  <script type="text/javascript">
+    $(document).ready(() => {
+      // $(document).ready(function() {
+      $('#slideshow').append('<div class="overlay"></div>')
+      $('.overlay').append('<div id = "controls"></div>')
+      $('#controls').append('<div id = "lb" class = "controlButton"><img src="arrow_right.png"></div>')
+      $('#controls').append('<div id = "rb" class = "controlButton"><img src="arrow_left.png"></div>')
+      $('#controls').append('<div id = "cap"></div>')
+      //need to make sure z-index of controls keeps it on top
+      $('.overlay').hide()
+      $('p.pic').click(function(e) {
+        e.preventDefault()
+        const imagePath = $(this).children('a').attr('href')
+        $('#cap').html($(this).children('a').attr('title'))
+        $('.overlay').append('<img src = "' + imagePath + '" class = "big">')
+        $('.big').on('load', function() {
+          resizeImage()
+          //use the size data from the image to postition the controls
+          //$('#controls').css('width', $('.big').width())
+          //$('#cap').css({
+          //  width: $('.big').width(),
+          //top: $('.big').height() / 2 - $('#cap').height() + $('.controlButton').height() / 2
+          //}) //end css stuff
+        }) //end load image
+        $('.overlay').fadeIn('slow')
+      }) //end pic click
+      $('.overlay').click(function(e) {
+        clearBigImage()
+      }) //end click overlay
+      const pathList = []
+      const titleList = []
+      const totalImages = $('#slideshow .pic').length
+      for (let i = 0; i < totalImages; i++) {
+        pathList[i] = $('#slideshow a').eq(i).attr('href')
+        titleList[i] = $('#slideshow a').eq(i).attr('title')
+      }
+      let currentImageNumber
+      $('#lb').click(function(e) {
+        e.preventDefault()
+        e.stopPropagation()
+        currentImageNumber = pathList.indexOf($('.big').attr('src'))
+        currentImageNumber--
+        if (currentImageNumber >= 0) {
+          updateImageAndTitle()
+        } else {
+          clearBigImage()
+        }
+      }) //end lb click
+      $('#rb').click(function(e) {
+        e.preventDefault()
+        e.stopPropagation()
+        currentImageNumber = pathList.indexOf($('.big').attr('src'))
+        currentImageNumber++
+        if (currentImageNumber < totalImages) {
+          updateImageAndTitle()
+        } else {
+          clearBigImage()
+        }
+      }) //end rb click
+      function updateImageAndTitle() {
+        //update image
+        $('.big, #controls').fadeOut(500, function() {
+          $('.big').attr('src', pathList[currentImageNumber])
+          $('#cap').html(titleList[currentImageNumber])
+        })
+        $('.big, #controls').fadeIn(500)
+      } //end updateImageAndTitle
+      function clearBigImage() {
+        $('.overlay').fadeOut('slow')
+        $('.big').remove()
+      } //end clearBigImage
+      $(window).resize(function() {
+        resizeImage()
+      })
+
+      function resizeImage() {
+        $('.big').css('width', "")
+        $('.big').css('height', "")
+        const cHeight = $(window).height()
+        const cWidth = $(window).width()
+        const iHeight = $('.big').height()
+        const iWidth = $('.big').width()
+        let ratio = 1
+
+        let newHeight;
+        let newWidth;
+
+        if (iHeight >= iWidth) {
+          //portrait iheight is greater than iwidth. = means square
+          newHeight = cHeight * 0.9
+          ratio = cHeight / iHeight
+          newWidth = iWidth * ratio
+
+          if (newWidth > cWidth * 0.9) {
+            //portrait iheight is greater than iwidth. = means square
+            ratio = cWidth / newWidth
+            newWidth = cWidth * 0.9
+            newHeight *= ratio
+          }
+        } else if (iHeight < iWidth) {
+          //landscape iheight is less than iwidth
+          newWidth = cWidth * 0.9
+          ratio = cWidth / iWidth
+          newHeight = iHeight * ratio
+
+          if (newHeight > cHeight * 0.9) {
+            //landscape iheight is less than iwidth
+
+            ratio = cHeight / newHeight
+            newHeight = cHeight * 0.9
+            newWidth *= ratio
+
+          }
+        } else {
+          console.log("Something diddly happened");
+        }
+        $('.big').css({
+          height: newHeight,
+          width: newWidth
+        })
+        $('#controls').css('width', newWidth)
+        $('#cap').css({
+          top: newHeight / 2 - $('#cap').height() + $('.controlButton').height() / 2,
+          width: newWidth
+        })
+      }
+    }) //end ready
+  </script>
+</head>
+
+<body>
+  <h1>Lemons</h1>
+  <div id="slideshow">
+    <p class="pic">
+      <a href="ll.jpeg" title="Lemons have a lot of vitamin C.">
+        <img src="le.jpeg">
+      </a>
+    </p>
+    <p class="pic">
+      <a href="yello.jpeg" title="Lemon trees can produce all year.">
+        <img src="lemo.jpeg">
+      </a>
+    </p>
+    <p class="pic">
+      <a href="juice.jpeg" title="Lemons are native to Asia.">
+        <img src="lemon.jpeg">
+      </a>
+    </p>
+    <p>The lemon is the fruit of a citrus plant belonging to the genus Citrus lemon.</p>
+    <p>The origin of the lemon is unknown, though lemons are thought to have first grown in Assam (a region in northeast India), northern Burma or China.
+
+      Lemons entered Europe near southern Italy no later than the 2nd century AD, during time of Ancient Rome.
+
+      They were introduced to Persia and then to Iraq and Egypt around 700 AD.
+
+      Lemons came to the New World in 1493, when Christopher Columbus brought lemon seeds to Hispaniola.
+
+      Spanish conquest throughout the New World helped spread lemon seeds.
+
+      In the 19th century, lemons were increasingly planted in Florida and California.
+    </p>
+    <p>The average lifespan of lemon trees is over 50 years. With proper care and disease prevention practices, a vigorous tree can live over 100 years.
+
+      The lemon tree is small evergreen tree reaches 3 to 6 meters (10 to 20 feet) in height and usually has sharp thorns on the twigs. The leaves are alternate, reddish when young, become dark-green above, light-green below; are oblong, elliptic or
+      long-ovate, 6.25 to 11.25 centimeters (2 1/2 to 4 1/2 inches) long, finely toothed, with slender wings on the petioles.</p>
+    <p>The fruit is oval with a broad, low, apical nipple and forms 8 to 10 segments. The outer rind, or peel, yellow when ripe and rather thick in some varieties, is prominently dotted with oil glands. The white spongy inner part of the peel,
+      called the mesocarp or albedo, is nearly tasteless and is the chief source of commercial grades of pectin. The seeds are small, ovoid, and pointed; occasionally fruits are seedless. The pulp is decidedly acidic.
+
+    </p>
+    <p>Lemon trees usually bloom throughout the year, and the fruit is picked 6 to 10 times a year. One tree can produce between 225 and 270 kilograms (500 and 600 pounds) of lemons in a year.
+
+      A whole raw lemon contains 139 percent of the daily recommended vitamin C intake and has 22 calories.
+
+      The health benefits of lemons are due to its many nutritious elements like vitamin C, vitamin B6, vitamin A, vitamin E, folate, niacin thiamin, riboflavin, pantothenic acid, copper, calcium, iron, magnesium, potassium, zinc, phosphorus and
+      protein. Lemon also contains flavonoids, which are composites that contain antioxidant and cancer fighting properties. It helps prevent diabetes, constipation, high blood pressure, fever, indigestion, as well as improve the skin, hair, and
+      teeth.</p>
+    <p>
+
+
+
+      Studies conducted at the American Urological Association highlight the fact that lemonade or lemon juice can eliminate the occurrence of kidney stones by forming urinary citrate, which prevents the formation of crystals.
+
+      Lemons have powerful antibacterial properties; experiments have found the juice of lemons destroy the bacteria of malaria, cholera, diphtheria, typhoid and other deadly diseases.
+
+      The lemon peel contains the potent phytonutrient tangeretin, which has been proven to be effective for brain disorders like Parkinsons disease.</p>
+    <p>According to The Reams Biological Ionization Theory (RBTI), the lemon is the ONLY food in the world that is anionic (an ion with a negative charge). All other foods are cationic (the ion has a positive charge.) This makes it extremely useful to health as it is the interaction between anions and cations that ultimately provides all cell energy.
+
+In India, Ayurveda medicine values the lemon as a fruit and for its properties. It is sour, warm, promoter of gastric fire, light, good for vision, pungent and astringent.
+
+Lemon juice, rind, and peel are used in a wide variety of foods and drinks.
+
+Lemonade, made with lemon, sugar, and water, is a popular warm-weather beverage, and the juice itself is commonly added to tea.</p>
+  </div>
+</body>
+
+</html>
